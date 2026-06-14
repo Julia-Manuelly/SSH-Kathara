@@ -1,0 +1,9 @@
+ip addr add 192.168.1.20/24 dev eth0
+ip link set eth0 up
+
+apt update
+apt install -y openssh-server
+
+mkdir -p /run/sshd
+
+/usr/sbin/sshd
