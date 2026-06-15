@@ -1,109 +1,265 @@
-Experimento SSH com Kathara
-**1. Descrição do projeto**
+# Experimento SSH com Kathara
 
-Este projeto tem como objetivo simular uma rede computacional utilizando o ambiente Kathara, permitindo a criação de máquinas virtuais interconectadas para análise do funcionamento do protocolo SSH (Secure Shell).
+## 1. Descrição do Projeto
 
-A prática envolve a configuração de um cliente e um servidor Linux, estabelecimento de comunicação via rede local simulada, autenticação remota e captura de tráfego de rede para análise posterior.
+Este projeto tem como objetivo mostrar o funcionamento do protocolo SSH (Secure Shell) em uma rede virtual criada com o Kathara.
 
-O experimento permite observar na prática conceitos de redes de computadores como comunicação cliente-servidor, funcionamento do protocolo TCP, segurança em comunicação remota e uso de ferramentas de captura de pacotes.
+O experimento consiste em criar duas máquinas virtuais, uma atuando como cliente e outra como servidor. A partir disso, é realizada uma conexão remota segura utilizando SSH e uma captura dos pacotes trafegados na rede.
 
-**2. Estrutura do ambiente**
+Com essa prática, é possível entender melhor conceitos importantes de redes de computadores, como comunicação cliente-servidor, uso do protocolo TCP, autenticação de usuários e criptografia dos dados transmitidos.
 
-O laboratório é composto por dois nós virtuais:
+## 2. Estrutura da Rede
 
-client: máquina cliente responsável por iniciar conexões na rede
-server: máquina servidor onde o serviço SSH é executado
+A rede utilizada possui dois dispositivos virtuais:
 
-Ambos os dispositivos estão conectados em uma rede virtual no segmento 192.168.1.0/24, permitindo comunicação direta entre eles.
+**client**
 
-**3. Pré-requisitos**
+* Endereço IP: 192.168.1.10
+* Função: realizar a conexão SSH
 
-Para executar o experimento, é necessário ter instalado:
+**server**
 
-Docker (para execução dos containers)
-Kathara Framework (para simulação da rede)
-Sistema operacional compatível (Linux ou Windows com WSL)
-Permissões de administrador para execução dos serviços de rede
-4. Arquivos do laboratório
+* Endereço IP: 192.168.1.20
+* Função: disponibilizar o serviço SSH
 
-O ambiente é composto pelos seguintes arquivos:
+Os dois dispositivos estão conectados à mesma rede virtual e conseguem se comunicar diretamente.
 
-lab.conf: define a topologia da rede e os dispositivos
-client.startup: script de inicialização do cliente
-server.startup: script de inicialização do servidor
-captura_ssh.pcap: arquivo gerado com a captura de tráfego
+## 3. Pré-requisitos
 
-**5. Configuração da rede**
+Antes de executar o experimento é necessário possuir:
 
-Durante a inicialização do laboratório, são executadas configurações automáticas nos nós:
+* Docker instalado e funcionando;
+* Kathara instalado;
+* Wireshark para análise das capturas;
+* Linux ou Windows com WSL.
 
-No cliente:
+Para verificar se o Docker está instalado:
 
-configuração do endereço IP 192.168.1.10
-ativação da interface de rede
+```bash
+docker --version
+```
 
-No servidor:
+Para verificar se o Kathara está instalado:
 
-configuração do endereço IP 192.168.1.20
-instalação do serviço OpenSSH Server
-inicialização do daemon SSH
+```bash
+kathara --version
+```
 
-Essas configurações permitem que os dois dispositivos se comuniquem diretamente dentro da rede simulada.
+## 4. Arquivos Utilizados
 
-**6. Execução do experimento**
-**6.1 Inicialização do ambiente**
+O projeto é composto pelos seguintes arquivos:
 
-O laboratório é iniciado com o comando:
+### lab.conf
 
+Define a topologia da rede virtual.
+
+### client.startup
+
+Configura automaticamente o endereço IP do cliente.
+
+### server.startup
+
+Configura o endereço IP do servidor e inicia o serviço SSH.
+
+### captura_ssh.pcap
+
+Arquivo gerado pelo tcpdump contendo os pacotes capturados durante o experimento.
+
+## 5. Configuração do Ambiente
+
+### Arquivo lab.conf
+
+```txt
+client[0]="A"
+server[0]="A"
+```
+
+### Arquivo client.startup
+
+```bash
+ip addr add 192.168.1.10/24 dev eth0
+ip link set eth0 up
+```
+
+### Arquivo server.startup
+
+```bash
+ip addr add 192.168.1.20/24 dev eth0
+ip link set eth0 up
+
+apt update
+apt install -y openssh-server
+
+mkdir -p /run/sshd
+
+/usr/sbin/sshd
+```
+
+## 6. Passo a Passo do Experimento
+
+### Passo 1 – Iniciar o laboratório
+
+Abrir o terminal na pasta do projeto e executar:
+
+```bash
 kathara lstart
+```
 
-Este comando cria os containers, configura a topologia de rede e inicia os dispositivos virtuais.
+Esse comando cria os dispositivos virtuais e configura a rede.
 
-**6.2 Teste de conectividade**
+### Passo 2 – Acessar o servidor
 
-No cliente, é realizado um teste de comunicação com o servidor:
+Abrir um terminal e executar:
 
+```bash
+kathara connect server
+```
+
+### Passo 3 – Criar um usuário
+
+Dentro do servidor executar:
+
+```bash
+useradd -m aluno
+```
+
+Definir uma senha:
+
+```bash
+passwd aluno
+```
+
+Foi utilizada a senha:
+
+```text
+123456
+```
+
+
+### Passo 4 – Acessar o cliente
+
+Abrir outro terminal e executar:
+
+```bash
+kathara connect client
+```
+
+### Passo 5 – Testar a comunicação
+
+No cliente executar:
+
+```bash
 ping 192.168.1.20
+```
 
-Este teste verifica se há comunicação entre os nós e se a rede está corretamente configurada.
+Se aparecer resposta do servidor, significa que a rede está funcionando corretamente.
 
-**6.3 Acesso remoto via SSH**
+### Passo 6 – Iniciar a captura de pacotes
 
-Após a confirmação da conectividade, o cliente realiza acesso remoto ao servidor utilizando o protocolo SSH:
+No servidor executar:
 
-ssh aluno@192.168.1.20
-
-Durante esse processo ocorre autenticação por senha e, após sucesso, é estabelecida uma sessão remota segura, permitindo a execução de comandos no servidor.
-
-**6.4 Captura de tráfego de rede**
-
-No servidor, é utilizada a ferramenta tcpdump para capturar os pacotes de rede:
-
+```bash
 tcpdump -i eth0 -w captura_ssh.pcap
+```
 
-A captura registra toda a comunicação entre cliente e servidor durante o uso do SSH, gerando um arquivo no formato .pcap para análise posterior.
+O comando ficará executando em segundo plano capturando todo o tráfego da rede.
 
-**6.5 Verificação do arquivo de captura**
+### Passo 7 – Realizar a conexão SSH
 
-Após a execução do experimento, o arquivo gerado é verificado com:
+No cliente executar:
 
+```bash
+ssh aluno@192.168.1.20
+```
+
+Na primeira conexão aparecerá uma mensagem pedindo confirmação da chave do servidor.
+
+Digite:
+
+```text
+yes
+```
+
+Depois informe a senha criada anteriormente.
+
+Se a autenticação for realizada com sucesso, o usuário terá acesso remoto ao servidor.
+
+### Passo 8 – Executar alguns comandos
+
+Já conectado ao servidor, executar:
+
+```bash
+whoami
+pwd
 ls
+```
+
+Esses comandos servem para gerar tráfego na conexão SSH.
+
+Para encerrar a sessão:
+
+```bash
+exit
+```
+
+### Passo 9 – Encerrar a captura
+
+Voltar ao terminal do servidor e pressionar:
+
+```text
+Ctrl + C
+```
+
+Será exibida uma mensagem semelhante a:
+
+```text
+136 packets captured
+```
+
+Isso indica que os pacotes foram capturados com sucesso.
+
+
+### Passo 10 – Verificar o arquivo de captura
+
+No servidor executar:
+
+```bash
 find / -name "*.pcap"
+```
 
-Confirmando a existência do arquivo captura_ssh.pcap, que contém todo o tráfego capturado.
+Resultado esperado:
 
-**7. Análise dos resultados**
+```text
+/captura_ssh.pcap
+```
 
-O arquivo de captura pode ser analisado em ferramentas como Wireshark, permitindo observar:
+## 7. Análise dos Resultados
 
-Estabelecimento da conexão TCP (Three-Way Handshake)
-Troca inicial de mensagens do SSH
-Negociação de chaves criptográficas
-Tráfego criptografado durante a sessão
-Comunicação segura entre cliente e servidor
+O arquivo de captura pode ser aberto no Wireshark para análise do tráfego.
 
-A análise demonstra que, após o estabelecimento da conexão, os dados trafegam de forma criptografada, impedindo a leitura direta do conteúdo.
+Utilizando o filtro:
 
-O experimento demonstra o funcionamento prático do protocolo SSH em um ambiente simulado. A utilização do Kathara permite a criação de uma rede controlada, possibilitando a análise detalhada da comunicação entre dispositivos.
+```text
+tcp.port == 22
+```
 
-Além disso, o uso do tcpdump permite capturar o tráfego gerado, reforçando a compreensão sobre segurança, criptografia e comunicação em redes de computadores.
+é possível visualizar os pacotes relacionados ao SSH.
+
+Durante a análise podem ser observados:
+
+* Three-Way Handshake do TCP;
+* Troca de versões do SSH;
+* Negociação dos algoritmos de criptografia;
+* Troca de chaves;
+* Comunicação criptografada entre cliente e servidor.
+
+Essas etapas mostram como o SSH cria uma conexão segura para proteger os dados transmitidos.
+
+## 8. Conclusão
+
+O experimento permitiu verificar na prática o funcionamento do protocolo SSH em uma rede simulada com o Kathara.
+
+Foi possível configurar um servidor SSH, realizar conexões remotas, capturar os pacotes da comunicação e analisar o tráfego utilizando o Wireshark.
+
+Os resultados demonstraram que o SSH oferece uma forma segura de acesso remoto, utilizando criptografia para proteger os dados durante toda a comunicação.
+ite capturar o tráfego gerado, reforçando a compreensão sobre segurança, criptografia e comunicação em redes de computadores.
